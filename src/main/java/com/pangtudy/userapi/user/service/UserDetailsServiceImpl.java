@@ -10,6 +10,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @RequiredArgsConstructor
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
@@ -18,11 +20,13 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        UserEntity user = userRepository.findByEmail(username);
+        Optional<UserEntity> userEntity = userRepository.findByEmail(username);
 
-        if (user == null) {
+        if (Optional.ofNullable(userEntity).isEmpty()) {
             throw new UsernameNotFoundException(username + " : 사용자 존재하지 않음");
         }
+
+        UserEntity user = userEntity.get();
 
         return new User(
                 user.getEmail(),
