@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import javax.transaction.Transactional;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 @Service
@@ -40,8 +41,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public Object loginUser(UserParam param, HttpServletResponse res) {
-        UserEntity user = userRepository.findByEmail(param.getEmail());
-        if (user != null) {
+        Optional<UserEntity> userEntity = userRepository.findByEmail(param.getEmail());
+        if (Optional.ofNullable(userEntity).isPresent()) {
+            UserEntity user = userEntity.get();
             String salt = user.getSalt();
             String password = saltUtil.encodePassword(salt, param.getPassword());
 
