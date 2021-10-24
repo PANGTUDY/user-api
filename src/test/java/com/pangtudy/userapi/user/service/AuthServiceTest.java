@@ -21,7 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class authServiceTest {
+public class AuthServiceTest {
 
     @InjectMocks
     private AuthServiceImpl authService;
@@ -37,7 +37,7 @@ public class authServiceTest {
 
     @DisplayName("회원 가입")
     @Test
-    void signUp() {
+    void 회원_가입() {
         // given
         final UserParam userParam = userParam();
         final String salt = saltUtil.genSalt();

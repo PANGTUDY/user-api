@@ -45,7 +45,7 @@ public class UserControllerTest {
 
     @DisplayName("사용자 목록 조회")
     @Test
-    void getUserList() throws Exception {
+    void 사용자_목록_조회() throws Exception {
         // given
         doReturn(userList()).when(userService).getAll();
 

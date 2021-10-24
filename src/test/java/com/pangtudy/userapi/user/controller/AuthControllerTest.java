@@ -45,7 +45,7 @@ public class AuthControllerTest {
 
     @DisplayName("회원 가입 성공")
     @Test
-    void signUpSuccess() throws Exception {
+    void 회원_가입_성공() throws Exception {
         // given
         final UserParam userParam = userParam();
         doReturn(new UserResult((long)1, "test@test.test", "test", "pw1", UserRole.ROLE_USER, "1")).when(authService).signUpUser(any());
