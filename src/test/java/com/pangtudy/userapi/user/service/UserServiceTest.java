@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 
 @ExtendWith(MockitoExtension.class)
-public class userServiceTest {
+public class UserServiceTest {
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -32,7 +32,7 @@ public class userServiceTest {
 
     @DisplayName("사용자 목록 조회")
     @Test
-    void findAll() {
+    void 사용자_목록_조회() {
         // given
         doReturn(userList()).when(userRepository).findAll();
 
