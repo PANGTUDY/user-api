@@ -49,7 +49,7 @@ public class UserServiceImpl implements UserService {
         if (Optional.ofNullable(userEntity).isPresent()) {
             UserEntity user = userEntity.get();
             copyNonNullProperties(sourceToDestinationTypeCasting(param, new UserEntity()), user);
-            return userRepository.save(user);
+            return sourceToDestinationTypeCasting(userRepository.save(user), new UserResult());
         }
         return null;
     }
