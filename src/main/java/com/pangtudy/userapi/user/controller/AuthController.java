@@ -33,4 +33,26 @@ public class AuthController {
         return user.getUsername();
     }
 
+    @PostMapping("/verify")
+    public Object verify(@RequestBody UserParam param) {
+        String response = "성공적으로 인증메일을 보냈습니다.";
+        try {
+            authService.sendVerificationMail(param);
+        } catch (Exception exception) {
+            response = "인증메일을 보내는데 문제가 발생했습니다.";
+        }
+        return response;
+    }
+
+    @GetMapping("/verify/{key}")
+    public Object getVerify(@PathVariable String key) {
+        String response = "성공적으로 인증메일을 확인했습니다.";
+        try {
+            authService.verifyEmail(key);
+        } catch (Exception e) {
+            response = "인증메일을 확인하는데 실패했습니다.";
+        }
+        return response;
+    }
+
 }

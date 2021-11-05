@@ -24,6 +24,7 @@ public class UserEntity {
     @Setter
     private String password;
 
+    @Setter
     @Column(name = "role")
     @Enumerated(EnumType.STRING)
     private UserRole role = UserRole.ROLE_NOT_PERMITTED;
