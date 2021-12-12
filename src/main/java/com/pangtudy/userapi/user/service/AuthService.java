@@ -17,4 +17,8 @@ public interface AuthService {
     void verifyEmail(String key) throws NotFoundException;
 
     void modifyUserRole(UserEntity user, UserRole userRole);
+
+    void sendPasswordChangeMail(UserParam param) throws NotFoundException;
+
+    void modifyUserPassword(UserEntity user, String password);
 }
