@@ -55,4 +55,15 @@ public class AuthController {
         return response;
     }
 
+    @PostMapping("/pwinquiry")
+    public Object pwinquiry(@RequestBody UserParam param) {
+        String response = "이메일로 임시 비밀번호를 발송하였습니다.";
+        try {
+            authService.sendPasswordChangeMail(param);
+        } catch (Exception exception) {
+            response = "임시 비밀번호를 발송하는데 문제가 발생했습니다.";
+        }
+        return response;
+    }
+
 }

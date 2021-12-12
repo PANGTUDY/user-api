@@ -92,6 +92,42 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
     }
 
+    @Override
+    public void sendPasswordChangeMail(UserParam param) throws NotFoundException {
+        Optional<UserEntity> user = userRepository.findByEmail(param.getEmail());
+        if (Optional.ofNullable(user).isEmpty()) throw new NotFoundException("멤버가 조회되지않음");
+
+        String password = randomPassword(10);
+        modifyUserPassword(user.get(), password);
+        emailService.sendMail(param.getEmail(), "[Pangtudy] 임시비밀번호입니다.", "임시 비밀번호 : " + password);
+    }
+
+    @Override
+    public void modifyUserPassword(UserEntity user, String password) {
+        String salt = saltUtil.genSalt();
+        user.setSalt(salt);
+        user.setPassword(saltUtil.encodePassword(salt, password));
+        userRepository.save(user);
+    }
+
+    public String randomPassword(int length) {
+        int index = 0;
+        char[] charSet = new char[] {
+                '0','1','2','3','4','5','6','7','8','9'
+                ,'A','B','C','D','E','F','G','H','I','J','K','L','M'
+                ,'N','O','P','Q','R','S','T','U','V','W','X','Y','Z'
+                ,'a','b','c','d','e','f','g','h','i','j','k','l','m'
+                ,'n','o','p','q','r','s','t','u','v','w','x','y','z'};
+
+        StringBuffer sb = new StringBuffer();
+        for (int i = 0; i < length; i++) {
+            index = (int)(charSet.length * Math.random());
+            sb.append(charSet[index]);
+        }
+
+        return sb.toString();
+    }
+
     private <R, T> T sourceToDestinationTypeCasting(R source, T destination) {
         modelMapper.map(source, destination);
         return destination;
