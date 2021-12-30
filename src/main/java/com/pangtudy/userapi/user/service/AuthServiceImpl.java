@@ -15,6 +15,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.transaction.Transactional;
 import java.util.Optional;
@@ -108,6 +109,29 @@ public class AuthServiceImpl implements AuthService {
         user.setSalt(salt);
         user.setPassword(saltUtil.encodePassword(salt, password));
         userRepository.save(user);
+    }
+	
+	@Override
+    public boolean tokenRefresh(HttpServletRequest req, HttpServletResponse res) {
+		Cookie refreshToken = cookieUtil.getCookie(req, JwtUtil.REFRESH_TOKEN_NAME);
+		
+		if (refreshToken != null) {
+			String refreshJwt = refreshToken.getValue();
+            String refreshUname = redisUtil.getData(refreshJwt);
+			
+			if (refreshUname != null && refreshUname.equals(jwtUtil.getEmail(refreshJwt))) {
+                UserEntity user = new UserEntity();
+                user.setEmail(refreshUname);
+                String newToken = jwtUtil.generateToken(user);
+
+                Cookie newAccessToken = cookieUtil.createCookie(JwtUtil.ACCESS_TOKEN_NAME, newToken);
+                res.addCookie(newAccessToken);
+
+                return true;
+            }
+		}
+		
+		return false;
     }
 
     public String randomPassword(int length) {

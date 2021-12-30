@@ -8,6 +8,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 @RestController
@@ -63,6 +64,16 @@ public class AuthController {
         } catch (Exception exception) {
             response = "임시 비밀번호를 발송하는데 문제가 발생했습니다.";
         }
+        return response;
+    }
+	
+	@PostMapping("/token")
+    public Object token(HttpServletRequest req, HttpServletResponse res) {
+        String response = "정상적으로 토큰을 갱신했습니다.";
+		if (authService.tokenRefresh(req, res) == false) {
+            res.setStatus(403);
+			response = "토큰을 갱신하는데 문제가 발생했습니다.";
+		}
         return response;
     }
 
