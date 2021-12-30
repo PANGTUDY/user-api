@@ -33,8 +33,6 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
     private final CookieUtil cookieUtil;
 
-    private final RedisUtil redisUtil;
-
     @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain filterChain) throws ServletException, IOException {
 
@@ -42,8 +40,6 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
         String email = null;
         String jwt = null;
-        String refreshJwt = null;
-        String refreshUname = null;
 
         try {
             if (jwtToken != null) {
@@ -60,35 +56,10 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 }
             }
         } catch (ExpiredJwtException e) {
-            Cookie refreshToken = cookieUtil.getCookie(req, JwtUtil.REFRESH_TOKEN_NAME);
-
-            if (refreshToken != null) {
-                refreshJwt = refreshToken.getValue();
-            }
+			res.setStatus(401);
+			return;
         } catch (Exception e) {
             System.out.println(e);
-        }
-
-        try {
-            if (refreshJwt != null) {
-                refreshUname = redisUtil.getData(refreshJwt);
-
-                if (refreshUname.equals(jwtUtil.getEmail(refreshJwt))) {
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(refreshUname);
-                    UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                    usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
-                    SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
-
-                    UserEntity user = new UserEntity();
-                    user.setEmail(refreshUname);
-                    String newToken = jwtUtil.generateToken(user);
-
-                    Cookie newAccessToken = cookieUtil.createCookie(JwtUtil.ACCESS_TOKEN_NAME, newToken);
-                    res.addCookie(newAccessToken);
-                }
-            }
-        } catch (ExpiredJwtException e) {
-
         }
 
         filterChain.doFilter(req, res);
