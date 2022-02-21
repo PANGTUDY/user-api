@@ -37,6 +37,10 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public Object signUpUser(UserParam param) {
+        Optional<UserEntity> userEntity = userRepository.findByEmail(param.getEmail());
+        if (userEntity.isPresent()) {
+            return null;
+        }
         String password = param.getPassword();
         String salt = saltUtil.genSalt();
         param.setSalt(salt);
