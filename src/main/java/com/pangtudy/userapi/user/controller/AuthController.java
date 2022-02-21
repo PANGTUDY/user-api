@@ -29,6 +29,16 @@ public class AuthController {
         return authService.loginUser(param, res);
     }
 
+    @PostMapping("/logout")
+    public Object logout(HttpServletRequest req, HttpServletResponse res) {
+        String response = "로그아웃 완료.";
+        if (authService.logoutUser(req) == false) {
+            res.setStatus(403);
+            response = "로그아웃을 수행하는데 문제가 발생했습니다.";
+        }
+        return response;
+    }
+
     @GetMapping("/me")
     public Object me(@AuthenticationPrincipal UserDetails user) {
         return user.getUsername();

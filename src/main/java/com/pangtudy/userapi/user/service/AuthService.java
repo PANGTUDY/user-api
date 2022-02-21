@@ -13,6 +13,8 @@ public interface AuthService {
 
     Object loginUser(UserParam param, HttpServletResponse res);
 
+    boolean logoutUser(HttpServletRequest req);
+
     void sendVerificationMail(UserParam param) throws NotFoundException;
 
     void verifyEmail(String key) throws NotFoundException;

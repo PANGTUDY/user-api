@@ -1,6 +1,7 @@
 package com.pangtudy.userapi.user.service;
 
 import com.pangtudy.userapi.user.config.UserRole;
+import com.pangtudy.userapi.user.model.TokenResult;
 import com.pangtudy.userapi.user.model.UserEntity;
 import com.pangtudy.userapi.user.model.UserParam;
 import com.pangtudy.userapi.user.model.UserResult;
@@ -39,6 +40,7 @@ public class AuthServiceImpl implements AuthService {
         String password = param.getPassword();
         String salt = saltUtil.genSalt();
         param.setSalt(salt);
+        param.setRole(UserRole.ROLE_USER);
         param.setPassword(saltUtil.encodePassword(salt, password));
         UserEntity user = userRepository.save(sourceToDestinationTypeCasting(param, new UserEntity()));
         return sourceToDestinationTypeCasting(user, new UserResult());
@@ -55,17 +57,32 @@ public class AuthServiceImpl implements AuthService {
             if (user.getPassword().equals(password)) {
                 final String token = jwtUtil.generateToken(user);
                 final String refreshJwt = jwtUtil.generateRefreshToken(user);
-                Cookie accessToken = cookieUtil.createCookie(JwtUtil.ACCESS_TOKEN_NAME, token);
-                Cookie refreshToken = cookieUtil.createCookie(JwtUtil.REFRESH_TOKEN_NAME, refreshJwt);
-                redisUtil.setDataExpire(refreshJwt, user.getEmail(), JwtUtil.REFRESH_TOKEN_VALIDATION_SECOND);
-                res.addCookie(accessToken);
-                res.addCookie(refreshToken);
 
-                return sourceToDestinationTypeCasting(user, new UserResult());
+                redisUtil.setDataExpire(refreshJwt, user.getEmail(), JwtUtil.REFRESH_TOKEN_VALIDATION_SECOND);
+
+                TokenResult tokenResult = new TokenResult(token, refreshJwt);
+                return tokenResult;
             }
         }
 
         return null;
+    }
+
+    @Override
+    public boolean logoutUser(HttpServletRequest req) {
+        Cookie refreshToken = cookieUtil.getCookie(req, JwtUtil.REFRESH_TOKEN_NAME);
+
+        if (refreshToken != null) {
+            String refreshJwt = refreshToken.getValue();
+            String refreshUname = redisUtil.getData(refreshJwt);
+
+            if (refreshUname != null && refreshUname.equals(jwtUtil.getEmail(refreshJwt))) {
+                redisUtil.deleteData(refreshJwt);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override
