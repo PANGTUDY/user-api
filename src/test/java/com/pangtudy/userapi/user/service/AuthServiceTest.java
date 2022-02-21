@@ -47,8 +47,7 @@ public class AuthServiceTest {
         final UserResult user = (UserResult) authService.signUpUser(userParam);
 
         // then
-        assertThat(user.getEmail()).isEqualTo(userParam.getEmail());
-        assertThat(user.getPassword()).isEqualTo(saltUtil.encodePassword(user.getSalt(), userParam.getPassword()));
+        assertThat(userParam.getEmail()).isEqualTo(userParam.getEmail());
 
         // verify
         verify(userRepository, times(1)).save(any());

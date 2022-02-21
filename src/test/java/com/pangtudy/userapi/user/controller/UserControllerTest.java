@@ -81,23 +81,6 @@ public class UserControllerTest {
         assertThat(token).isNotNull();
     }
 
-    @DisplayName("특정 사용자 수정")
-    @Test
-    void 특정_사용자_수정() throws Exception {
-        // given
-        doReturn(userResult()).when(userService).edit(any());
-
-        // when
-        final ResultActions resultActions = mockMvc.perform(
-                MockMvcRequestBuilders.put("/users/{email}", "test@test.test")
-        );
-
-        // then
-        final MvcResult mvcResult = resultActions.andDo(print()).andExpect(status().isOk()).andReturn();
-        final String token = mvcResult.getResponse().getContentAsString();
-        assertThat(token).isNotNull();
-    }
-
     @DisplayName("특정 사용자 삭제")
     @Test
     void 특정_사용자_삭제() throws Exception {
