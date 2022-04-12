@@ -24,6 +24,6 @@ public interface AuthService {
     void sendPasswordChangeMail(UserParam param) throws NotFoundException;
 
     void modifyUserPassword(UserEntity user, String password);
-	
-	boolean tokenRefresh(HttpServletRequest req, HttpServletResponse res);
+
+    Object tokenRefresh(HttpServletRequest req, HttpServletResponse res);
 }

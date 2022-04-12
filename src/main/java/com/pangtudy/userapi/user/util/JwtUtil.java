@@ -49,16 +49,17 @@ public class JwtUtil {
     }
 
     public String generateToken(UserEntity user) {
-        return doGenerateToken(user.getEmail(), TOKEN_VALIDATION_SECOND);
+        return doGenerateToken(user.getEmail(), user.getName(), TOKEN_VALIDATION_SECOND);
     }
 
     public String generateRefreshToken(UserEntity user) {
-        return doGenerateToken(user.getEmail(), REFRESH_TOKEN_VALIDATION_SECOND);
+        return doGenerateToken(user.getEmail(), user.getName(), REFRESH_TOKEN_VALIDATION_SECOND);
     }
 
-    private String doGenerateToken(String email, long expireTime) {
+    private String doGenerateToken(String email, String name, long expireTime) {
         Claims claims = Jwts.claims();
         claims.put("email", email);
+        claims.put("name", name);
 
         return Jwts.builder()
                 .setClaims(claims)

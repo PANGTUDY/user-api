@@ -79,12 +79,12 @@ public class AuthController {
 	
 	@PostMapping("/token")
     public Object token(HttpServletRequest req, HttpServletResponse res) {
-        String response = "정상적으로 토큰을 갱신했습니다.";
-		if (authService.tokenRefresh(req, res) == false) {
+        Object result = authService.tokenRefresh(req, res);
+		if (result == null) {
             res.setStatus(403);
-			response = "토큰을 갱신하는데 문제가 발생했습니다.";
+			return "토큰을 갱신하는데 문제가 발생했습니다.";
 		}
-        return response;
+        return result;
     }
 
 }

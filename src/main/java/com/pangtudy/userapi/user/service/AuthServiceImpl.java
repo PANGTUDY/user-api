@@ -74,14 +74,12 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public boolean logoutUser(HttpServletRequest req) {
-        Cookie refreshToken = cookieUtil.getCookie(req, JwtUtil.REFRESH_TOKEN_NAME);
+        if (req.getHeader("Authorization") != null && req.getHeader("Authorization").startsWith("Bearer")) {
+            String refreshToken = req.getHeader("Authorization").substring("Bearer ".length());
+            String refreshUname = redisUtil.getData(refreshToken);
 
-        if (refreshToken != null) {
-            String refreshJwt = refreshToken.getValue();
-            String refreshUname = redisUtil.getData(refreshJwt);
-
-            if (refreshUname != null && refreshUname.equals(jwtUtil.getEmail(refreshJwt))) {
-                redisUtil.deleteData(refreshJwt);
+            if (refreshUname != null && refreshUname.equals(jwtUtil.getEmail(refreshToken))) {
+                redisUtil.deleteData(refreshToken);
                 return true;
             }
         }
@@ -133,26 +131,25 @@ public class AuthServiceImpl implements AuthService {
     }
 	
 	@Override
-    public boolean tokenRefresh(HttpServletRequest req, HttpServletResponse res) {
-		Cookie refreshToken = cookieUtil.getCookie(req, JwtUtil.REFRESH_TOKEN_NAME);
-		
-		if (refreshToken != null) {
-			String refreshJwt = refreshToken.getValue();
-            String refreshUname = redisUtil.getData(refreshJwt);
-			
-			if (refreshUname != null && refreshUname.equals(jwtUtil.getEmail(refreshJwt))) {
+    public Object tokenRefresh(HttpServletRequest req, HttpServletResponse res) {
+        if (req.getHeader("Authorization") != null && req.getHeader("Authorization").startsWith("Bearer")) {
+            String refreshToken = req.getHeader("Authorization").substring("Bearer ".length());
+            String refreshUname = redisUtil.getData(refreshToken);
+
+            if (refreshUname != null && refreshUname.equals(jwtUtil.getEmail(refreshToken))) {
                 UserEntity user = new UserEntity();
                 user.setEmail(refreshUname);
                 String newToken = jwtUtil.generateToken(user);
 
                 Cookie newAccessToken = cookieUtil.createCookie(JwtUtil.ACCESS_TOKEN_NAME, newToken);
                 res.addCookie(newAccessToken);
+                TokenResult tokenResult = new TokenResult(newToken, refreshToken);
 
-                return true;
+                return tokenResult;
             }
-		}
-		
-		return false;
+        }
+
+        return null;
     }
 
     public String randomPassword(int length) {
