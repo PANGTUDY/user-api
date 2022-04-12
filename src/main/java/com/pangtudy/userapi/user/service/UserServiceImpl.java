@@ -1,9 +1,11 @@
 package com.pangtudy.userapi.user.service;
 
+import com.pangtudy.userapi.user.config.UserRole;
 import com.pangtudy.userapi.user.model.UserEntity;
 import com.pangtudy.userapi.user.model.UserParam;
 import com.pangtudy.userapi.user.model.UserResult;
 import com.pangtudy.userapi.user.repository.UserRepository;
+import com.pangtudy.userapi.user.util.SaltUtil;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.BeanUtils;
@@ -24,6 +26,7 @@ public class UserServiceImpl implements UserService {
 
     private final ModelMapper modelMapper;
     private final UserRepository userRepository;
+    private final SaltUtil saltUtil;
 
     @Override
     public Object getAll() {
@@ -48,6 +51,10 @@ public class UserServiceImpl implements UserService {
         Optional<UserEntity> userEntity = userRepository.findByEmail(param.getEmail());
         if (Optional.ofNullable(userEntity).isPresent()) {
             UserEntity user = userEntity.get();
+            String password = param.getPassword();
+            String salt = saltUtil.genSalt();
+            param.setSalt(salt);
+            param.setPassword(saltUtil.encodePassword(salt, password));
             copyNonNullProperties(sourceToDestinationTypeCasting(param, new UserEntity()), user);
             return sourceToDestinationTypeCasting(userRepository.save(user), new UserResult());
         }
