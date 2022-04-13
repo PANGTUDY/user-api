@@ -52,9 +52,11 @@ public class UserServiceImpl implements UserService {
         if (Optional.ofNullable(userEntity).isPresent()) {
             UserEntity user = userEntity.get();
             String password = param.getPassword();
-            String salt = saltUtil.genSalt();
-            param.setSalt(salt);
-            param.setPassword(saltUtil.encodePassword(salt, password));
+            if (password != null) {
+                String salt = saltUtil.genSalt();
+                param.setSalt(salt);
+                param.setPassword(saltUtil.encodePassword(salt, password));
+            }
             copyNonNullProperties(sourceToDestinationTypeCasting(param, new UserEntity()), user);
             return sourceToDestinationTypeCasting(userRepository.save(user), new UserResult());
         }
