@@ -1,29 +1,23 @@
 package com.pangtudy.userapi.user.service;
 
-import com.pangtudy.userapi.user.config.UserRole;
-import com.pangtudy.userapi.user.model.UserEntity;
-import com.pangtudy.userapi.user.model.UserParam;
-import javassist.NotFoundException;
+import com.pangtudy.userapi.user.model.UserRequestDto;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 public interface AuthService {
-    Object signUpUser(UserParam param);
 
-    Object loginUser(UserParam param, HttpServletResponse res);
+    Object signUp(UserRequestDto userRequestDto);
 
-    boolean logoutUser(HttpServletRequest req);
+    Object login(UserRequestDto userRequestDto);
 
-    void sendVerificationMail(UserParam param) throws NotFoundException;
+    Object logout(HttpServletRequest req);
 
-    void verifyEmail(String key) throws NotFoundException;
+    Object refresh(HttpServletRequest req);
 
-    void modifyUserRole(UserEntity user, UserRole userRole);
+    Object sendVerificationMail(UserRequestDto userRequestDto);
 
-    void sendPasswordChangeMail(UserParam param) throws NotFoundException;
+    Object verifyEmail(String key);
 
-    void modifyUserPassword(UserEntity user, String password);
+    Object sendPasswordChangeMail(UserRequestDto userRequestDto);
 
-    Object tokenRefresh(HttpServletRequest req, HttpServletResponse res);
 }

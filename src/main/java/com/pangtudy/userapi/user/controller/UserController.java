@@ -1,6 +1,6 @@
 package com.pangtudy.userapi.user.controller;
 
-import com.pangtudy.userapi.user.model.UserParam;
+import com.pangtudy.userapi.user.model.*;
 import com.pangtudy.userapi.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -16,23 +16,22 @@ public class UserController {
 
     @GetMapping("")
     public Object getUsers() {
-        return userService.getAll();
+        return userService.getUsers();
     }
 
-    @GetMapping("/{email}")
-    public Object getUserOne(@PathVariable("email") String email) {
-        return userService.get(email);
+    @GetMapping("/{id}")
+    public Object retrieveUser(@PathVariable("id") Long id) {
+        return userService.retrieveUser(id);
     }
 
-    @PutMapping("/{email}")
-    public Object edit(@RequestBody UserParam param, @PathVariable("email") String email) {
-        param.setEmail(email);
-        return userService.edit(param);
+    @PutMapping("/{id}")
+    public Object updateUser(@RequestBody UserRequestDto userRequestDto, @PathVariable("id") Long id) {
+        return userService.updateUser(userRequestDto, id);
     }
 
-    @DeleteMapping("/{email}")
-    public Object delete(@PathVariable("email") String email) {
-        return userService.delete(email);
+    @DeleteMapping("/{id}")
+    public Object deleteUser(@PathVariable("id") Long id) {
+        return userService.deleteUser(id);
     }
 
 }

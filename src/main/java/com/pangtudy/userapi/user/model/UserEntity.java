@@ -1,6 +1,6 @@
 package com.pangtudy.userapi.user.model;
 
-import com.pangtudy.userapi.user.config.UserRole;
+import com.pangtudy.userapi.user.model.UserRole;
 import lombok.*;
 
 import javax.persistence.*;
@@ -11,6 +11,7 @@ import javax.persistence.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -31,4 +32,5 @@ public class UserEntity {
 
     @Setter
     private String salt;
+
 }

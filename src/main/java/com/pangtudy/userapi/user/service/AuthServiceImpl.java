@@ -1,25 +1,21 @@
 package com.pangtudy.userapi.user.service;
 
-import com.pangtudy.userapi.user.config.UserRole;
-import com.pangtudy.userapi.user.model.TokenResult;
-import com.pangtudy.userapi.user.model.UserEntity;
-import com.pangtudy.userapi.user.model.UserParam;
-import com.pangtudy.userapi.user.model.UserResult;
+import com.pangtudy.userapi.user.model.UserRole;
+import com.pangtudy.userapi.user.exception.ConflictException;
+import com.pangtudy.userapi.user.exception.NotFoundException;
+import com.pangtudy.userapi.user.exception.UnauthorizedException;
+import com.pangtudy.userapi.user.model.*;
 import com.pangtudy.userapi.user.repository.UserRepository;
-import com.pangtudy.userapi.user.util.CookieUtil;
+import com.pangtudy.userapi.user.util.EmailUtil;
 import com.pangtudy.userapi.user.util.JwtUtil;
 import com.pangtudy.userapi.user.util.RedisUtil;
 import com.pangtudy.userapi.user.util.SaltUtil;
-import javassist.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.transaction.Transactional;
-import java.util.Optional;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -28,131 +24,128 @@ public class AuthServiceImpl implements AuthService {
 
     private final ModelMapper modelMapper;
     private final UserRepository userRepository;
-    private final EmailService emailService;
+    private final EmailUtil emailUtil;
     private final SaltUtil saltUtil;
     private final JwtUtil jwtUtil;
-    private final CookieUtil cookieUtil;
     private final RedisUtil redisUtil;
 
     @Override
     @Transactional
-    public Object signUpUser(UserParam param) {
-        Optional<UserEntity> userEntity = userRepository.findByEmail(param.getEmail());
-        if (userEntity.isPresent()) {
-            return null;
+    public Object signUp(UserRequestDto userRequestDto) {
+        if (userRepository.findByEmail(userRequestDto.getEmail()).isPresent()) {
+            throw new ConflictException("해당 이메일로 가입한 계정이 이미 존재합니다.");
         }
-        String password = param.getPassword();
+
+        String password = userRequestDto.getPassword();
         String salt = saltUtil.genSalt();
-        param.setSalt(salt);
-        param.setRole(UserRole.ROLE_USER);
-        param.setPassword(saltUtil.encodePassword(salt, password));
-        UserEntity user = userRepository.save(sourceToDestinationTypeCasting(param, new UserEntity()));
-        return sourceToDestinationTypeCasting(user, new UserResult());
+
+        UserEntity userEntity = sourceToDestinationTypeCasting(userRequestDto, new UserEntity());
+        userEntity.setSalt(salt);
+        userEntity.setRole(UserRole.ROLE_USER);
+        userEntity.setPassword(saltUtil.encodePassword(salt, password));
+        userRepository.save(userEntity);
+
+        return new ResponseDto("success", "ok", null);
     }
 
     @Override
-    public Object loginUser(UserParam param, HttpServletResponse res) {
-        Optional<UserEntity> userEntity = userRepository.findByEmail(param.getEmail());
-        if (Optional.ofNullable(userEntity).isPresent()) {
-            UserEntity user = userEntity.get();
-            String salt = user.getSalt();
-            String password = saltUtil.encodePassword(salt, param.getPassword());
+    public Object login(UserRequestDto userRequestDto) {
+        UserEntity userEntity = userRepository.findByEmail(userRequestDto.getEmail()).orElseThrow(() -> new UnauthorizedException("해당 이메일로 가입한 계정이 존재하지 않습니다."));
+        String salt = userEntity.getSalt();
+        String password = saltUtil.encodePassword(salt, userRequestDto.getPassword());
 
-            if (user.getPassword().equals(password)) {
-                final String token = jwtUtil.generateToken(user);
-                final String refreshJwt = jwtUtil.generateRefreshToken(user);
-
-                redisUtil.setDataExpire(refreshJwt, user.getEmail(), JwtUtil.REFRESH_TOKEN_VALIDATION_SECOND);
-
-                TokenResult tokenResult = new TokenResult(token, refreshJwt);
-                return tokenResult;
-            }
+        if (!userEntity.getPassword().equals(password)) {
+            throw new UnauthorizedException("비밀번호가 일치하지 않습니다.");
         }
 
-        return null;
+        String accessToken = jwtUtil.generateAccessToken(userEntity.getId());
+        String refreshToken = jwtUtil.generateRefreshToken();
+
+        redisUtil.setDataExpire(refreshToken, userEntity.getId().toString(), JwtUtil.REFRESH_TOKEN_VALIDATION_SECOND);
+
+        TokenResponseDto tokenResponseDto = TokenResponseDto.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
+
+        return new ResponseDto("success", "ok", tokenResponseDto);
     }
 
     @Override
-    public boolean logoutUser(HttpServletRequest req) {
-        if (req.getHeader("Authorization") != null && req.getHeader("Authorization").startsWith("Bearer")) {
-            String refreshToken = req.getHeader("Authorization").substring("Bearer ".length());
-            String refreshUname = redisUtil.getData(refreshToken);
-
-            if (refreshUname != null && refreshUname.equals(jwtUtil.getEmail(refreshToken))) {
-                redisUtil.deleteData(refreshToken);
-                return true;
-            }
+    public Object logout(HttpServletRequest req) {
+        if (req.getHeader("Authorization") == null || !req.getHeader("Authorization").startsWith("Bearer")) {
+            throw new UnauthorizedException("리프레쉬 토큰이 존재하지 않습니다.");
         }
 
-        return false;
+        String refreshToken = req.getHeader("Authorization").substring("Bearer ".length());
+        String userId = redisUtil.getData(refreshToken);
+
+        if (userId == null) {
+            throw new UnauthorizedException("리프레쉬 토큰이 유효하지 않습니다.");
+        }
+
+        userRepository.findById(Long.parseLong(userId)).orElseThrow(() -> new UnauthorizedException("리프레쉬 토큰이 유효하지 않습니다."));
+
+        redisUtil.deleteData(refreshToken);
+        return new ResponseDto("success", "ok", null);
     }
 
     @Override
-    public void sendVerificationMail(UserParam param) throws NotFoundException {
-        if (userRepository.findByEmail(param.getEmail()) == null) throw new NotFoundException("멤버가 조회되지 않음");
+    public Object refresh(HttpServletRequest req) {
+        if (req.getHeader("Authorization") == null || !req.getHeader("Authorization").startsWith("Bearer")) {
+            throw new UnauthorizedException("리프레쉬 토큰이 존재하지 않습니다.");
+        }
 
+        String refreshToken = req.getHeader("Authorization").substring("Bearer ".length());
+        String userId = redisUtil.getData(refreshToken);
+
+        if (userId == null) {
+            throw new UnauthorizedException("리프레쉬 토큰이 유효하지 않습니다.");
+        }
+
+        userRepository.findById(Long.parseLong(userId)).orElseThrow(() -> new UnauthorizedException("리프레쉬 토큰이 유효하지 않습니다."));
+
+        String accessToken = jwtUtil.generateAccessToken(Long.parseLong(userId));
+        TokenResponseDto tokenResponseDto = TokenResponseDto.builder()
+                .accessToken(accessToken)
+                .build();
+
+        return new ResponseDto("success", "ok", tokenResponseDto);
+    }
+
+    @Override
+    public Object sendVerificationMail(UserRequestDto userRequestDto) {
+        userRepository.findByEmail(userRequestDto.getEmail()).orElseThrow(() -> new NotFoundException("해당 이메일로 가입한 계정이 존재하지 않습니다."));
         String VERIFICATION_LINK = "http://localhost:8080/auth/verify/";
         UUID uuid = UUID.randomUUID();
-        redisUtil.setDataExpire(uuid.toString(), param.getEmail(), 60 * 30L);
-        emailService.sendMail(param.getEmail(), "[Pangtudy] 회원가입 인증메일입니다.", VERIFICATION_LINK + uuid.toString());
+        redisUtil.setDataExpire(uuid.toString(), userRequestDto.getEmail(), 60 * 30L);
+        emailUtil.sendMail(userRequestDto.getEmail(), "[Pangtudy] 회원가입 인증메일입니다.", VERIFICATION_LINK + uuid);
+        return new ResponseDto("success", "ok", null);
     }
 
     @Override
-    public void verifyEmail(String key) throws NotFoundException {
+    public Object verifyEmail(String key) {
         String email = redisUtil.getData(key);
-        Optional<UserEntity> user = userRepository.findByEmail(email);
-        if (Optional.ofNullable(user).isEmpty()) throw new NotFoundException("멤버가 조회되지않음");
-        modifyUserRole(user.get(), UserRole.ROLE_USER);
+        UserEntity userEntity = userRepository.findByEmail(email).orElseThrow(() -> new UnauthorizedException("인증 메일이 만료되었습니다."));
+        userEntity.setRole(UserRole.ROLE_USER);
+        userRepository.save(userEntity);
         redisUtil.deleteData(key);
+        return new ResponseDto("success", "ok", null);
     }
 
     @Override
-    public void modifyUserRole(UserEntity user, UserRole userRole){
-        user.setRole(userRole);
-        userRepository.save(user);
-    }
-
-    @Override
-    public void sendPasswordChangeMail(UserParam param) throws NotFoundException {
-        Optional<UserEntity> user = userRepository.findByEmail(param.getEmail());
-        if (Optional.ofNullable(user).isEmpty()) throw new NotFoundException("멤버가 조회되지않음");
-
+    public Object sendPasswordChangeMail(UserRequestDto userRequestDto) {
+        UserEntity userEntity = userRepository.findByEmail(userRequestDto.getEmail()).orElseThrow(() -> new NotFoundException("해당 이메일로 가입한 계정이 존재하지 않습니다."));
         String password = randomPassword(10);
-        modifyUserPassword(user.get(), password);
-        emailService.sendMail(param.getEmail(), "[Pangtudy] 임시비밀번호입니다.", "임시 비밀번호 : " + password);
-    }
-
-    @Override
-    public void modifyUserPassword(UserEntity user, String password) {
         String salt = saltUtil.genSalt();
-        user.setSalt(salt);
-        user.setPassword(saltUtil.encodePassword(salt, password));
-        userRepository.save(user);
-    }
-	
-	@Override
-    public Object tokenRefresh(HttpServletRequest req, HttpServletResponse res) {
-        if (req.getHeader("Authorization") != null && req.getHeader("Authorization").startsWith("Bearer")) {
-            String refreshToken = req.getHeader("Authorization").substring("Bearer ".length());
-            String refreshUname = redisUtil.getData(refreshToken);
-
-            if (refreshUname != null && refreshUname.equals(jwtUtil.getEmail(refreshToken))) {
-                UserEntity user = new UserEntity();
-                user.setEmail(refreshUname);
-                String newToken = jwtUtil.generateToken(user);
-
-                Cookie newAccessToken = cookieUtil.createCookie(JwtUtil.ACCESS_TOKEN_NAME, newToken);
-                res.addCookie(newAccessToken);
-                TokenResult tokenResult = new TokenResult(newToken, refreshToken);
-
-                return tokenResult;
-            }
-        }
-
-        return null;
+        userEntity.setSalt(salt);
+        userEntity.setPassword(saltUtil.encodePassword(salt, password));
+        userRepository.save(userEntity);
+        emailUtil.sendMail(userRequestDto.getEmail(), "[Pangtudy] 임시비밀번호입니다.", "임시 비밀번호 : " + password);
+        return new ResponseDto("success", "ok", null);
     }
 
-    public String randomPassword(int length) {
+    private String randomPassword(int length) {
         int index = 0;
         char[] charSet = new char[] {
                 '0','1','2','3','4','5','6','7','8','9'
@@ -174,4 +167,5 @@ public class AuthServiceImpl implements AuthService {
         modelMapper.map(source, destination);
         return destination;
     }
+
 }

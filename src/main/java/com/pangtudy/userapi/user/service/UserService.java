@@ -1,13 +1,15 @@
 package com.pangtudy.userapi.user.service;
 
-import com.pangtudy.userapi.user.model.UserParam;
+import com.pangtudy.userapi.user.model.UserRequestDto;
 
 public interface UserService {
-    Object getAll();
 
-    Object get(String email);
+    Object getUsers();
 
-    Object edit(UserParam param);
+    Object retrieveUser(Long id);
 
-    Object delete(String email);
+    Object updateUser(UserRequestDto userRequestDto, Long id);
+
+    Object deleteUser(Long id);
+
 }

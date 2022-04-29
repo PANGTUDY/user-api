@@ -1,4 +1,4 @@
-package com.pangtudy.userapi.user.config;
+package com.pangtudy.userapi.user.model;
 
 public enum UserRole {
     ROLE_NOT_PERMITTED,

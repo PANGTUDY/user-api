@@ -1,4 +1,4 @@
-package com.pangtudy.userapi.user.service;
+package com.pangtudy.userapi.user.util;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
@@ -7,12 +7,11 @@ import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
-public class EmailServiceImpl implements EmailService {
+public class EmailUtil {
 
     private final JavaMailSender emailSender;
 
-    @Override
-    public void sendMail(String to,String sub, String text){
+    public void sendMail(String to,String sub, String text) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);
         message.setSubject(sub);

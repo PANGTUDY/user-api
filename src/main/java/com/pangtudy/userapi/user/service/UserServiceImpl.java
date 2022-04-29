@@ -1,9 +1,7 @@
 package com.pangtudy.userapi.user.service;
 
-import com.pangtudy.userapi.user.config.UserRole;
-import com.pangtudy.userapi.user.model.UserEntity;
-import com.pangtudy.userapi.user.model.UserParam;
-import com.pangtudy.userapi.user.model.UserResult;
+import com.pangtudy.userapi.user.exception.NotFoundException;
+import com.pangtudy.userapi.user.model.*;
 import com.pangtudy.userapi.user.repository.UserRepository;
 import com.pangtudy.userapi.user.util.SaltUtil;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +14,6 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -29,49 +26,46 @@ public class UserServiceImpl implements UserService {
     private final SaltUtil saltUtil;
 
     @Override
-    public Object getAll() {
-        List<UserEntity> users = userRepository.findAll();
-        return users.stream()
-                .map(userEntity -> sourceToDestinationTypeCasting(userEntity, new UserResult()))
+    public Object getUsers() {
+        List<UserEntity> userEntityList = userRepository.findAll();
+        List<UserResponseDto> userResponseDtoList = userEntityList.stream()
+                .map(userEntity -> sourceToDestinationTypeCasting(userEntity, new UserResponseDto()))
                 .collect(Collectors.toList());
+        return new ResponseDto("success", "ok", userResponseDtoList);
     }
 
     @Override
-    public Object get(String email) {
-        Optional<UserEntity> user = userRepository.findByEmail(email);
-        if (Optional.ofNullable(user).isPresent()) {
-            return user.map(userEntity -> sourceToDestinationTypeCasting(userEntity, new UserResult()));
-        }
-        return null;
-    }
-
-    @Override
-    @Transactional
-    public Object edit(UserParam param) {
-        Optional<UserEntity> userEntity = userRepository.findByEmail(param.getEmail());
-        if (Optional.ofNullable(userEntity).isPresent()) {
-            UserEntity user = userEntity.get();
-            String password = param.getPassword();
-            if (password != null) {
-                String salt = saltUtil.genSalt();
-                param.setSalt(salt);
-                param.setPassword(saltUtil.encodePassword(salt, password));
-            }
-            copyNonNullProperties(sourceToDestinationTypeCasting(param, new UserEntity()), user);
-            return sourceToDestinationTypeCasting(userRepository.save(user), new UserResult());
-        }
-        return null;
+    public Object retrieveUser(Long id) {
+        UserEntity userEntity = userRepository.findById(id).orElseThrow(() -> new NotFoundException("해당 ID의 유저가 존재하지 않습니다."));
+        UserResponseDto userResponseDto = sourceToDestinationTypeCasting(userEntity, new UserResponseDto());
+        return new ResponseDto("success", "ok", userResponseDto);
     }
 
     @Override
     @Transactional
-    public Object delete(String email) {
-        Optional<UserEntity> user = userRepository.findByEmail(email);
-        if (Optional.ofNullable(user).isPresent()) {
-            userRepository.deleteByEmail(email);
-            return user.map(userEntity -> sourceToDestinationTypeCasting(userEntity, new UserResult()));
+    public Object updateUser(UserRequestDto userRequestDto, Long id) {
+        UserEntity userEntityOld = userRepository.findById(id).orElseThrow(() -> new NotFoundException("해당 ID의 유저가 존재하지 않습니다."));
+        UserEntity userEntityNew = sourceToDestinationTypeCasting(userRequestDto, new UserEntity());
+
+        String password = userRequestDto.getPassword();
+        if (password != null) {
+            String salt = saltUtil.genSalt();
+            userEntityNew.setSalt(salt);
+            userEntityNew.setPassword(saltUtil.encodePassword(salt, password));
         }
-        return null;
+
+        copyNonNullProperties(userEntityNew, userEntityOld);
+        userRepository.save(userEntityOld);
+
+        return new ResponseDto("success", "ok", null);
+    }
+
+    @Override
+    @Transactional
+    public Object deleteUser(Long id) {
+        userRepository.findById(id).orElseThrow(() -> new NotFoundException("해당 ID의 유저가 존재하지 않습니다."));
+        userRepository.deleteById(id);
+        return new ResponseDto("success", "ok", null);
     }
 
     private <R, T> T sourceToDestinationTypeCasting(R source, T destination) {
@@ -95,4 +89,5 @@ public class UserServiceImpl implements UserService {
         String[] result = new String[emptyNames.size()];
         return emptyNames.toArray(result);
     }
+
 }
