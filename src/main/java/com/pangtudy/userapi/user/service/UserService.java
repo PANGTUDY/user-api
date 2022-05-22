@@ -1,5 +1,6 @@
 package com.pangtudy.userapi.user.service;
 
+import com.pangtudy.userapi.user.model.UpdateRolesRequestDto;
 import com.pangtudy.userapi.user.model.UserRequestDto;
 
 public interface UserService {
@@ -11,5 +12,7 @@ public interface UserService {
     Object updateUser(UserRequestDto userRequestDto, Long id);
 
     Object deleteUser(Long id);
+
+    Object updateRoles(UpdateRolesRequestDto updateRolesRequestDto);
 
 }

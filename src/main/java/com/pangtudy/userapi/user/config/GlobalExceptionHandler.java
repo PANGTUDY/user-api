@@ -1,5 +1,6 @@
 package com.pangtudy.userapi.user.config;
 
+import com.pangtudy.userapi.user.exception.BadRequestException;
 import com.pangtudy.userapi.user.exception.ConflictException;
 import com.pangtudy.userapi.user.exception.NotFoundException;
 import com.pangtudy.userapi.user.exception.UnauthorizedException;
@@ -16,7 +17,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(NotFoundException.class)
-    protected ResponseEntity<?> handleRuntimeException(NotFoundException e) {
+    protected ResponseEntity<?> handleNotFoundException(NotFoundException e) {
         final ResponseDto responseDto = new ResponseDto("error", e.getMessage(), null);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseDto);
     }
@@ -31,6 +32,12 @@ public class GlobalExceptionHandler {
     protected ResponseEntity<?> handleUnauthorizedException(UnauthorizedException e) {
         final ResponseDto responseDto = new ResponseDto("error", e.getMessage(), null);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    protected ResponseEntity<?> handleBadRequestException(BadRequestException e) {
+        final ResponseDto responseDto = new ResponseDto("error", e.getMessage(), null);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

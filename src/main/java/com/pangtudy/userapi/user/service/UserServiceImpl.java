@@ -1,5 +1,6 @@
 package com.pangtudy.userapi.user.service;
 
+import com.pangtudy.userapi.user.exception.BadRequestException;
 import com.pangtudy.userapi.user.exception.NotFoundException;
 import com.pangtudy.userapi.user.model.*;
 import com.pangtudy.userapi.user.repository.UserRepository;
@@ -65,6 +66,25 @@ public class UserServiceImpl implements UserService {
     public Object deleteUser(Long id) {
         userRepository.findById(id).orElseThrow(() -> new NotFoundException("해당 ID의 유저가 존재하지 않습니다."));
         userRepository.deleteById(id);
+        return new ResponseDto("success", "ok", null);
+    }
+
+    @Override
+    @Transactional
+    public Object updateRoles(UpdateRolesRequestDto updateRolesRequestDto) {
+        List<Long> ids = updateRolesRequestDto.getIds();
+        String role = updateRolesRequestDto.getRole();
+
+        if (role.equals("user")) {
+            userRepository.updateRoleSelectedUsers(UserRole.ROLE_USER, ids);
+        }
+        else if (role.equals("admin")) {
+            userRepository.updateRoleSelectedUsers(UserRole.ROLE_ADMIN, ids);
+        }
+        else {
+            throw new BadRequestException("role 필드의 값은 user 또는 admin 이어야 합니다.");
+        }
+
         return new ResponseDto("success", "ok", null);
     }
 

@@ -34,4 +34,9 @@ public class UserController {
         return userService.deleteUser(id);
     }
 
+    @PostMapping("/update-roles")
+    public Object updateRoles(@RequestBody @Validated UpdateRolesRequestDto updateRolesRequestDto) {
+        return userService.updateRoles(updateRolesRequestDto);
+    }
+
 }
