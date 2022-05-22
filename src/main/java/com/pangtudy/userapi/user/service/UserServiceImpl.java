@@ -27,9 +27,10 @@ public class UserServiceImpl implements UserService {
     private final SaltUtil saltUtil;
 
     @Override
-    public Object getUsers() {
+    public Object getUsers(String email) {
         List<UserEntity> userEntityList = userRepository.findAll();
         List<UserResponseDto> userResponseDtoList = userEntityList.stream()
+                .filter(userEntity -> email == null || userEntity.getEmail().contains(email))
                 .map(userEntity -> sourceToDestinationTypeCasting(userEntity, new UserResponseDto()))
                 .collect(Collectors.toList());
         return new ResponseDto("success", "ok", userResponseDtoList);

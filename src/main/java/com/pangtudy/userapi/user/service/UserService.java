@@ -5,7 +5,7 @@ import com.pangtudy.userapi.user.model.UserRequestDto;
 
 public interface UserService {
 
-    Object getUsers();
+    Object getUsers(String email);
 
     Object retrieveUser(Long id);
 

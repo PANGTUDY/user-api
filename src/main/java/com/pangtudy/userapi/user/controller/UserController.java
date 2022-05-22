@@ -15,8 +15,8 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("")
-    public Object getUsers() {
-        return userService.getUsers();
+    public Object getUsers(@RequestParam(value = "email", required = false) String email) {
+        return userService.getUsers(email);
     }
 
     @GetMapping("/{id}")
