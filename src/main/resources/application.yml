@@ -6,7 +6,7 @@ spring:
   application:
     name: user-api
   profiles:
-    active: prod
+    active: stg
   jwt:
     secret: pangtudypangtudypangtudypangtudypangtudypangtudypangtudypangtudypangtudypangtudypangtudy
   mvc:
@@ -42,4 +42,4 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      defaultZone: http://116.43.4.165:8761/eureka
+      defaultZone: http://127.0.0.1:8761/eureka
